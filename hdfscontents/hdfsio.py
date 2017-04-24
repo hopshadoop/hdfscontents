@@ -41,8 +41,8 @@ def path_to_invalid(path):
 def hdfs_copy_file(hdfs, src, dst):
         chunk = 2 ** 16
         # TODO: check if we need to specify replication
-        with hdfs.open(dst, 'wb') as f1:
-            with hdfs.open(src, 'rb') as f2:
+        with hdfs.open_file(dst, 'w') as f1:
+            with hdfs.open_file(src, 'r') as f2:
                 while True:
                     out = f2.read(chunk)
                     if len(out) == 0:
@@ -57,12 +57,12 @@ def hdfs_replace_file(hdfs, src, dst):
     """ replace dst with src
     switches between os.replace or os.rename based on python 2.7 or python 3
     """
-    hdfs.rm(dst)
-    hdfs.mv(src, dst)
+    hdfs.delete(dst)
+    hdfs.move(src, hdfs, dst)
 
 
 def hdfs_file_exists(hdfs, hdfs_path):
-    return hdfs.exists(hdfs_path) and hdfs.info(hdfs_path).get(u'kind') == u'file'
+    return hdfs.exists(hdfs_path) and hdfs.get_path_info(hdfs_path).get(u'kind') == u'file'
 
 @contextmanager
 def atomic_writing(hdfs, hdfs_path):
@@ -84,7 +84,7 @@ def atomic_writing(hdfs, hdfs_path):
     if hdfs_file_exists(hdfs, hdfs_path):
         hdfs_copy_file(hdfs, hdfs_path, tmp_path)
 
-    fileobj = hdfs.open(hdfs_path, 'wb')
+    fileobj = hdfs.open_file(hdfs_path, 'w')
 
     try:
         yield fileobj
@@ -100,7 +100,7 @@ def atomic_writing(hdfs, hdfs_path):
 
     # Written successfully, now remove the backup copy
     if hdfs_file_exists(hdfs, tmp_path):
-        hdfs.rm(tmp_path)
+        hdfs.delete(tmp_path)
 
 
 @contextmanager
@@ -112,14 +112,14 @@ def _simple_writing(hdfs, hdfs_path):
     disk and the temporary file is removed.
     Parameters
     ----------
-    hdfs : HDFileSystem
-      the hdfs3 object
+    hdfs : pydoop.hdfs.fs.hdfs
+      the hdfs connection object
     hdfs_path : str
       The target file to write to.
     """
 
     # Text mode is not supported in HDFS3
-    fileobj = hdfs.open(hdfs_path, 'wb')
+    fileobj = hdfs.open_file(hdfs_path, 'w')
 
     try:
         yield fileobj
@@ -144,7 +144,7 @@ class HDFSManagerMixin(Configurable):
     Classes using this mixin must provide the following attributes:
     root_dir : unicode
         A directory against against which API-style paths are to be resolved.
-    hdfs : HDFileSystem
+    hdfs : pydoop.hdfs.fs.hdfs
         To communicate with the HDFS cluster
     log : logging.Logger
     """
@@ -180,7 +180,7 @@ class HDFSManagerMixin(Configurable):
         """
         if not self.hdfs.exists(hdfs_path):
             try:
-                self.hdfs.mkdir(hdfs_path)
+                self.hdfs.create_directory(hdfs_path)
             except OSError as e:
                 if e.errno != errno.EEXIST:
                     raise
@@ -218,8 +218,8 @@ class HDFSManagerMixin(Configurable):
             Whether the file exists.
         """
 
-        if (self.hdfs.exists(hdfs_path)):
-            return self.hdfs.info(hdfs_path).get(u'kind') == u'file'
+        if self.hdfs.exists(hdfs_path):
+            return self.hdfs.get_path_info(hdfs_path).get(u'kind') == u'file'
         else:
             return False
 
@@ -231,8 +231,8 @@ class HDFSManagerMixin(Configurable):
 
     def _hdfs_move_file(self, src, dst):
         if self._hdfs_file_exists(dst):
-            self.hdfs.rm(dst)
-        self.hdfs.mv(src, dst)
+            self.hdfs.delete(dst)
+        self.hdfs.move(src, self.hdfs,  dst)
 
     def _hdfs_copy_file(self, src, dst):
         hdfs_copy_file(self.hdfs, src, dst)
@@ -279,7 +279,7 @@ class HDFSManagerMixin(Configurable):
     def _read_notebook(self, hdfs_path, as_version=4):
         """Read a notebook from an os path."""
         # TODO: check for open errors
-        with self.hdfs.open(hdfs_path, 'rb') as f:
+        with self.hdfs.open_file(hdfs_path, 'r') as f:
             try:
                 return nbformat.read(f, as_version=as_version)
             except Exception as e:
@@ -318,7 +318,7 @@ class HDFSManagerMixin(Configurable):
         if not self._hdfs_file_exists(hdfs_path):
             raise HTTPError(400, "Cannot read non-file %s" % hdfs_path)
 
-        with self.hdfs.open(hdfs_path, 'rb') as f:
+        with self.hdfs.open_file(hdfs_path, 'r') as f:
             bcontent = f.read()
 
         if format is None or format == 'text':

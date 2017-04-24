@@ -71,7 +71,7 @@ class HDFSCheckpoints(HDFSManagerMixin, Checkpoints):
 
         self.log.debug("unlinking %s", cp_path)
         with self.perm_to_403():
-            self.hdfs.rm(cp_path)
+            self.hdfs.delete(cp_path)
 
     def list_checkpoints(self, path):
         """list the checkpoints for a given file
@@ -106,7 +106,7 @@ class HDFSCheckpoints(HDFSManagerMixin, Checkpoints):
 
     def checkpoint_model(self, checkpoint_id, hdfs_path):
         """construct the info dict for a given checkpoint"""
-        stats = self.hdfs.info(hdfs_path)
+        stats = self.hdfs.get_path_info(hdfs_path)
         last_modified = tz.utcfromtimestamp(stats.get(u'last_mod'))
 
         info = dict(
