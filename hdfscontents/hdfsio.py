@@ -14,6 +14,8 @@ from notebook.utils import (
     to_os_path,
 )
 import nbformat
+
+from pydoop.hdfs.path import split
 from ipython_genutils.py3compat import str_to_unicode
 from traitlets.config import Configurable
 from traitlets import Bool, Integer, Unicode, default, Instance
@@ -220,6 +222,12 @@ class HDFSManagerMixin(Configurable):
             return self.hdfs.info(hdfs_path).get(u'kind') == u'file'
         else:
             return False
+
+    def _hdfs_exists(self, hdfs_path):
+        return self.hdfs.exists(hdfs_path)
+
+    def _hdfs_ls(self, hdfs_path):
+        return [split(d['name'])[2] for d in self.hdfs.list_directory(hdfs_path)]
 
     def _hdfs_move_file(self, src, dst):
         if self._hdfs_file_exists(dst):
