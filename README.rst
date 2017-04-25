@@ -23,12 +23,14 @@ Getting Started
 4. Install HDFSContents Manager. This will also install dependencies such as Pydoop_
 
 ::
+
   pip install hdfscontents
 
+.. code: bash
 
 5. Configure and run Jupyter Notebook
 
-  a. You can either use command line arguments to configure Jupyter to use the HDFSContentsManager class and set HDFS related configurations
+  You can either use command line arguments to configure Jupyter to use the HDFSContentsManager class and set HDFS related configurations
 
   ::
 
@@ -39,10 +41,13 @@ Getting Started
 
   .. code: bash
 
-  b. Alternatively, first run:
+  Alternatively, first run:
 
   ::
+  
     jupyter-notebook --generate-config
+  
+  .. code: bash
   
   to generate a default config file. Edit and add the HDFS related configurations in the generated file. Then start the notebook server.
   ::
