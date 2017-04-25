@@ -28,30 +28,30 @@ Getting Started
 
 .. code: bash
 
-5. Configure and run Jupyter Notebook
+5. Configure and run Jupyter Notebook.
 
-  You can either use command line arguments to configure Jupyter to use the HDFSContentsManager class and set HDFS related configurations
+You can either use command line arguments to configure Jupyter to use the HDFSContentsManager class and set HDFS related configurations
 
-  ::
+::
 
-    jupyter-notebook --NotebookApp.contents_manager_class='hdfscontents.hdfsmanager.HDFSContentsManager' \
-          --HDFSContentsManager.hdfs_namenode_host='localhost' \
-          --HDFSContentsManager.hdfs_namenode_port=9000 \
-          --HDFSContentsManager.root_dir='/user/centos/'
+  jupyter-notebook --NotebookApp.contents_manager_class='hdfscontents.hdfsmanager.HDFSContentsManager' \
+        --HDFSContentsManager.hdfs_namenode_host='localhost' \
+        --HDFSContentsManager.hdfs_namenode_port=9000 \
+        --HDFSContentsManager.root_dir='/user/centos/'
 
-  .. code: bash
+.. code: bash
 
-  Alternatively, first run:
+Alternatively, first run:
 
-  ::
-  
-    jupyter-notebook --generate-config
-  
-  .. code: bash
-  
-  to generate a default config file. Edit and add the HDFS related configurations in the generated file. Then start the notebook server.
-  ::
-    jupyter-notebook
+::
+ 
+  jupyter-notebook --generate-config
+ 
+.. code: bash
+ 
+to generate a default config file. Edit and add the HDFS related configurations in the generated file. Then start the notebook server.
+::
+  jupyter-notebook
 
 
 .. _Pydoop: http://crs4.github.io/pydoop/
