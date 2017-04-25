@@ -48,9 +48,6 @@ def hdfs_copy_file(hdfs, src, dst):
                     if len(out) == 0:
                         break
                     f1.write(out)
-        f1.close()
-        f1.flush()
-        f2.close()
 
 
 def hdfs_replace_file(hdfs, src, dst):
@@ -167,7 +164,7 @@ class HDFSManagerMixin(Configurable):
         """
 
         if self.hdfs.exists(hdfs_path):
-            return self.hdfs.info(hdfs_path).get(u'kind') == u'directory'
+            return self.hdfs.get_path_info(hdfs_path).get(u'kind') == u'directory'
         else:
             return False
 
