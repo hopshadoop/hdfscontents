@@ -70,8 +70,8 @@ def atomic_writing(hdfs, hdfs_path):
     disk and the temporary file is removed.
     Parameters
     ----------
-    hdfs : HDFileSystem
-      the hdfs3 object
+    hdfs : pydoop.hdfs.fs.hdfs
+      the hdfs connection object
     hdfs_path : str
       The target file to write to.
     """
@@ -115,7 +115,7 @@ def _simple_writing(hdfs, hdfs_path):
       The target file to write to.
     """
 
-    # Text mode is not supported in HDFS3
+
     fileobj = hdfs.open_file(hdfs_path, 'w')
 
     try:
