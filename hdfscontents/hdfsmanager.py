@@ -3,7 +3,7 @@
 # Copyright (c) A
 # Distributed under the terms of the Modified BSD License.
 
-from hdfs3 import HDFileSystem
+from pydoop.hdfs.fs import hdfs as HDFS
 from hdfscontents.hdfsio import HDFSManagerMixin
 from hdfscontents.hdfscheckpoints import HDFSCheckpoints
 from notebook.services.contents.manager import ContentsManager
@@ -35,12 +35,12 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
 
     root_dir = Unicode(u'/', config=True, help='The HDFS root directory to use')
 
-    # The HDFS3 object used to interact with HDFS cluster.
-    hdfs = Instance(HDFileSystem, config=True)
+    # The pydoop HDFS connection object used to interact with HDFS cluster.
+    hdfs = Instance(HDFS, config=True)
 
     @default('hdfs')
     def _default_hdfs(self):
-        return HDFileSystem(host=self.hdfs_namenode_host, port=self.hdfs_namenode_port, user=self.hdfs_user)
+        return HDFS(host=self.hdfs_namenode_host, port=self.hdfs_namenode_port, user=self.hdfs_user)  # groups=None
 
     def _checkpoints_class_default(self):
         # TODO: a better way to pass hdfs and root_dir?
@@ -119,13 +119,13 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
         path = path.strip('/')
         hdfs_path = to_os_path(path, self.root_dir)
 
-        return self.hdfs.exists(hdfs_path)
+        return self._hdfs_exists(hdfs_path)
 
     def _base_model(self, path):
         """Build the common base of a hdfscontents model"""
         hdfs_path = to_os_path(path, self.root_dir)
 
-        info = self.hdfs.info(hdfs_path)
+        info = self.hdfs.get_path_info(hdfs_path)
         last_modified = tz.utcfromtimestamp(info.get(u'last_mod'))
 
         # TODO: don't have time created! now storing last accessed instead
@@ -140,7 +140,7 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
         model['format'] = None
         model['mimetype'] = None
 
-        # TODO: Now just checking if user have write permission in HDFS. Need to cover all cases and check the user & group
+        # TODO: Now just checking if user have write permission in HDFS. Need to cover all cases and check the user & group?
         try:
             model['writable'] = (info.get(u'permissions') & 0o0200) > 0
         except OSError:
@@ -168,7 +168,7 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
         if content:
             model['content'] = contents = []
 
-            for subpath in self.hdfs.ls(hdfs_path, detail=False):
+            for subpath in self._hdfs_ls(hdfs_path):
 
                 name = subpath.strip('/').rsplit('/', 1)[-1]
                 if self.should_list(name) and not self._hdfs_is_hidden(subpath):
@@ -230,9 +230,9 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
         """create a directory"""
         if self._hdfs_is_hidden(hdfs_path):
             raise HTTPError(400, u'Cannot create hidden directory %r' % hdfs_path)
-        if not self.hdfs.exists(hdfs_path):
+        if not self._hdfs_exists(hdfs_path):
             try:
-                self.hdfs.mkdir(hdfs_path)
+                self.hdfs.create_directory(hdfs_path)
             except:
                 raise HTTPError(403, u'Permission denied: %s' % path)
         elif not self._hdfs_dir_exists(hdfs_path):
@@ -340,7 +340,7 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
         hdfs_path = to_os_path(path, self.root_dir)
         if self._hdfs_dir_exists(hdfs_path):
 
-            listing = self.hdfs.ls(hdfs_path, detail=False)
+            listing = self._hdfs_ls(hdfs_path)
             # Don't delete non-empty directories.
             # A directory containing only leftover checkpoints is
             # considered empty.
@@ -355,13 +355,13 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
         if self._hdfs_dir_exists(hdfs_path):
             self.log.debug("Removing directory %s", hdfs_path)
             try:
-                self.hdfs.rm(hdfs_path, recursive=True)
+                self.hdfs.delete(hdfs_path, recursive=True)
             except:
                 raise HTTPError(403, u'Permission denied: %s' % path)
         else:
             self.log.debug("Removing file %s", hdfs_path)
             try:
-                self.hdfs.rm(hdfs_path, recursive=False)
+                self.hdfs.delete(hdfs_path, recursive=False)
             except:
                 raise HTTPError(403, u'Permission denied: %s' % path)
 
@@ -376,7 +376,7 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
         old_hdfs_path = to_os_path(old_path, self.root_dir)
 
         # Should we proceed with the move?
-        if self.hdfs.exists(new_hdfs_path):
+        if self._hdfs_exists(new_hdfs_path):
             raise web.HTTPError(409, u'File already exists: %s' % new_path)
 
         # Move the file
