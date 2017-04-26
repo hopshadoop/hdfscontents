@@ -35,9 +35,11 @@ You can either use command line arguments to configure Jupyter to use the HDFSCo
 ::
 
   jupyter-notebook --NotebookApp.contents_manager_class='hdfscontents.hdfsmanager.HDFSContentsManager' \
+        --NotebookApp.ip='*' \
         --HDFSContentsManager.hdfs_namenode_host='localhost' \
         --HDFSContentsManager.hdfs_namenode_port=9000 \
-        --HDFSContentsManager.root_dir='/user/centos/'
+        --HDFSContentsManager.hdfs_user='myuser' \
+        --HDFSContentsManager.root_dir='/user/myuser/'
 
 .. code: bash
 
