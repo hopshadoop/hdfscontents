@@ -14,6 +14,7 @@ from notebook.utils import (
     to_os_path,
 )
 import nbformat
+import io
 
 from pydoop.hdfs.path import split
 from ipython_genutils.py3compat import str_to_unicode
@@ -278,7 +279,10 @@ class HDFSManagerMixin(Configurable):
         # TODO: check for open errors
         with self.hdfs.open_file(hdfs_path, 'r') as f:
             try:
-                return nbformat.read(f, as_version=as_version)
+                s = f.read()
+                if isinstance(s, bytes):
+                    s = s.decode("utf8")
+                return nbformat.read(io.StringIO(s), as_version=as_version)
             except Exception as e:
                 e_orig = e
 
