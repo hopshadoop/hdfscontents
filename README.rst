@@ -39,7 +39,8 @@ You can either use command line arguments to configure Jupyter to use the HDFSCo
         --HDFSContentsManager.hdfs_namenode_host='localhost' \
         --HDFSContentsManager.hdfs_namenode_port=9000 \
         --HDFSContentsManager.hdfs_user='myuser' \
-        --HDFSContentsManager.root_dir='/user/myuser/'
+        --HDFSContentsManager.root_dir='/user/myuser/' \
+        --HDFSContentsManager.auto_create_root_dir=False
 
 .. code: bash
 

@@ -8,6 +8,7 @@ from hdfscontents.hdfsio import HDFSManagerMixin
 from hdfscontents.hdfscheckpoints import HDFSCheckpoints
 from notebook.services.contents.manager import ContentsManager
 from notebook.utils import to_os_path
+from distutils.command.config import config
 try:  # new notebook
     from notebook import _tz as tz
 except ImportError: # old notebook
@@ -16,7 +17,7 @@ from tornado import web
 from tornado.web import HTTPError
 import mimetypes
 import nbformat
-from traitlets import Instance, Integer, Unicode, default
+from traitlets import Instance, Integer, Unicode, Bool, default
 
 try:  # PY3
     from base64 import encodebytes, decodebytes
@@ -34,7 +35,10 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
     hdfs_user = Unicode(None, allow_none=True, config=True, help='The HDFS user name')
 
     root_dir = Unicode(u'/', config=True, help='The HDFS root directory to use')
-
+    auto_create_root_dir = Bool(False, config=True, help='Auto create HDFS root directory to use')
+    
+    is_created = False
+    
     # The pydoop HDFS connection object used to interact with HDFS cluster.
     hdfs = Instance(HDFS, config=True)
 
@@ -65,6 +69,10 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
         """
         path = path.strip('/')
         hdfs_path = to_os_path(path, self.root_dir)
+        
+        if(not self.is_created and self.auto_create_root_dir):
+            self.hdfs.create_directory(hdfs_path)
+            self.is_created = True
 
         return self._hdfs_dir_exists(hdfs_path)
 
