@@ -7,14 +7,14 @@ def read(fname):
 
 setup(
     name='hdfscontents',
-    version='0.4',
+    version='0.5',
     author='Ahmad Al-Shishtawy',
     author_email='alshishtawy@gmail.com',
     description='Jupyter content manager that uses the HDFS filesystem',
     license='Apache License 2.0',
     keywords='Jupyter, HDFS, HOPS, Hadoop',
     url='https://github.com/hopshadoop/hdfscontents',
-    download_url = 'https://github.com/hopshadoop/hdfscontents/archive/0.4.tar.gz',
+    download_url = 'https://github.com/hopshadoop/hdfscontents/archive/0.5.tar.gz',
     packages=['hdfscontents', 'tests'],
     long_description=read('README.rst'),
     classifiers=[
