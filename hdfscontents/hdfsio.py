@@ -82,7 +82,6 @@ def atomic_writing(hdfs, hdfs_path):
         hdfs_copy_file(hdfs, hdfs_path, tmp_path)
 
     fileobj = hdfs.open_file(hdfs_path, 'w')
-
     try:
         yield fileobj
     except:
@@ -94,7 +93,8 @@ def atomic_writing(hdfs, hdfs_path):
     # Flush to disk
     fileobj.flush()
     fileobj.close()
-
+    # hdfs.chmod(hdfs_path, '0770')
+    
     # Written successfully, now remove the backup copy
     if hdfs_file_exists(hdfs, tmp_path):
         hdfs.delete(tmp_path)
