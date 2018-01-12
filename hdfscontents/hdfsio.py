@@ -39,15 +39,16 @@ def path_to_invalid(path):
 
 
 def hdfs_copy_file(hdfs, src, dst):
-        chunk = 2 ** 16
-        # TODO: check if we need to specify replication
-        with hdfs.open_file(dst, 'w') as f1:
-            with hdfs.open_file(src, 'r') as f2:
-                while True:
-                    out = f2.read(chunk)
-                    if len(out) == 0:
-                        break
-                    f1.write(out)
+    chunk = 2 ** 16
+    # TODO: check if we need to specify replication
+    with hdfs.open_file(dst, 'w') as f1:
+        with hdfs.open_file(src, 'r') as f2:
+            while True:
+                out = f2.read(chunk)
+                if len(out) == 0:
+                    break
+                f1.write(out)
+    hdfs.chmod(dst, 0770)
 
 
 def hdfs_replace_file(hdfs, src, dst):
@@ -56,6 +57,7 @@ def hdfs_replace_file(hdfs, src, dst):
     """
     hdfs.delete(dst)
     hdfs.move(src, hdfs, dst)
+    hdfs.chmod(dst, 0770)
 
 
 def hdfs_file_exists(hdfs, hdfs_path):
@@ -93,7 +95,7 @@ def atomic_writing(hdfs, hdfs_path):
     # Flush to disk
     fileobj.flush()
     fileobj.close()
-    # hdfs.chmod(hdfs_path, '0770')
+    hdfs.chmod(hdfs_path, 0770)
     
     # Written successfully, now remove the backup copy
     if hdfs_file_exists(hdfs, tmp_path):
@@ -128,6 +130,7 @@ def _simple_writing(hdfs, hdfs_path):
     # Flush to disk
     fileobj.flush()
     fileobj.close()
+    hdfs.chmod(hdfs_path, 0770)
 
 
 class HDFSManagerMixin(Configurable):
@@ -178,6 +181,7 @@ class HDFSManagerMixin(Configurable):
         if not self.hdfs.exists(hdfs_path):
             try:
                 self.hdfs.create_directory(hdfs_path)
+                self.hdfs.chmod(hdfs_path, 0770)
             except OSError as e:
                 if e.errno != errno.EEXIST:
                     raise
@@ -227,9 +231,12 @@ class HDFSManagerMixin(Configurable):
         return [split(d['name'])[2] for d in self.hdfs.list_directory(hdfs_path)]
 
     def _hdfs_move_file(self, src, dst):
-        if self._hdfs_file_exists(dst):
+        if self._hdfs_exists(dst):
             self.hdfs.delete(dst)
         self.hdfs.move(src, self.hdfs,  dst)
+        # The pydoop move changes the permissions back to default!
+        for p in self.hdfs.walk(dst):
+            self.hdfs.chmod(p['name'], 0770)
 
     def _hdfs_copy_file(self, src, dst):
         hdfs_copy_file(self.hdfs, src, dst)

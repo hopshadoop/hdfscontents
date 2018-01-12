@@ -233,7 +233,7 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
         if not self._hdfs_exists(hdfs_path):
             try:
                 self.hdfs.create_directory(hdfs_path)
-                self.hdfs.chmod(hdfs_path, '0770')                
+                self.hdfs.chmod(hdfs_path, 0770)
             except:
                 raise HTTPError(403, u'Permission denied: %s' % path)
         elif not self._hdfs_dir_exists(hdfs_path):
