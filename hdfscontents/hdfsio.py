@@ -308,8 +308,12 @@ class HDFSManagerMixin(Configurable):
 
     def _save_notebook(self, hdfs_path, nb):
         """Save a notebook to an os_path."""
+        # Convert the notebook to unicode string
+        notebook_json = nbformat.writes(nb, version=nbformat.NO_CONVERT)
+
         with self.atomic_writing(hdfs_path) as f:
-            nbformat.write(nb, f, version=nbformat.NO_CONVERT)
+            # Write the notebook on hdfs
+            f.write(notebook_json.encode('utf-8'))
 
     def _read_file(self, hdfs_path, format):
         """Read a non-notebook file.
