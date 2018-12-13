@@ -7,7 +7,7 @@ def read(fname):
 
 setup(
     name='hdfscontents',
-    version='0.6',
+    version='0.7',
     author='Ahmad Al-Shishtawy',
     author_email='alshishtawy@gmail.com',
     description='Jupyter content manager that uses the HDFS filesystem',
