@@ -1,12 +1,14 @@
 """
 HDFS-based Checkpoints implementations.
 """
+import pdb
 import os
 from hdfscontents.hdfsio import HDFSManagerMixin
 from tornado.web import HTTPError
 from notebook.services.contents.checkpoints import Checkpoints
+from pydoop.hdfs.fs import hdfs as HDFS
 
-from traitlets import Unicode
+from traitlets import Unicode, Instance, Integer, default
 try:  # new notebook
     from notebook import _tz as tz
 except ImportError: # old notebook
@@ -30,14 +32,15 @@ class HDFSCheckpoints(HDFSManagerMixin, Checkpoints):
         """,
     )
 
-    hdfs = None
-    root_dire = None
+    # hdfs = None
+    # root_dire = None
+
 
     # ContentsManager-dependent checkpoint API
     def create_checkpoint(self, contents_mgr, path):
         """Create a checkpoint."""
         checkpoint_id = u'checkpoint'
-        src_path = contents_mgr._get_hdfs_path(path)
+        src_path = contents_mgr._get_os_path(path)
         dest_path = self.checkpoint_path(checkpoint_id, path)
         self._copy(src_path, dest_path)
         return self.checkpoint_model(checkpoint_id, dest_path)
@@ -45,7 +48,7 @@ class HDFSCheckpoints(HDFSManagerMixin, Checkpoints):
     def restore_checkpoint(self, contents_mgr, checkpoint_id, path):
         """Restore a checkpoint."""
         src_path = self.checkpoint_path(checkpoint_id, path)
-        dest_path = contents_mgr._get_hdfs_path(path)
+        dest_path = contents_mgr._get_os_path(path)
         self._copy(src_path, dest_path)
 
     # ContentsManager-independent checkpoint API

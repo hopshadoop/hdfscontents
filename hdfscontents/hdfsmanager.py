@@ -29,23 +29,20 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
     ContentsManager that persists to HDFS filesystem local filesystem.
     """
 
-    hdfs_namenode_host = Unicode(u'localhost', config=True, help='The HDFS namenode host')
-    hdfs_namenode_port = Integer(9000, config=True, help='The HDFS namenode port')
-    hdfs_user = Unicode(None, allow_none=True, config=True, help='The HDFS user name')
+    # hdfs_namenode_host = Unicode(u'localhost', config=True, help='The HDFS namenode host')
+    # hdfs_namenode_port = Integer(9000, config=True, help='The HDFS namenode port')
+    # hdfs_user = Unicode(None, allow_none=True, config=True, help='The HDFS user name')
+    #
+    # root_dir = Unicode(u'/', config=True, help='The HDFS root directory to use')
+    #
+    # # The pydoop HDFS connection object used to interact with HDFS cluster.
+    # hdfs = Instance(HDFS, config=True)
 
-    root_dir = Unicode(u'/', config=True, help='The HDFS root directory to use')
-
-    # The pydoop HDFS connection object used to interact with HDFS cluster.
-    hdfs = Instance(HDFS, config=True)
-
-    @default('hdfs')
-    def _default_hdfs(self):
-        return HDFS(host=self.hdfs_namenode_host, port=self.hdfs_namenode_port, user=self.hdfs_user)  # groups=None
+    # @default('hdfs')
+    # def _default_hdfs(self):
+    #     return HDFS(host=self.hdfs_namenode_host, port=self.hdfs_namenode_port, user=self.hdfs_user)  # groups=None
 
     def _checkpoints_class_default(self):
-        # TODO: a better way to pass hdfs and root_dir?
-        HDFSCheckpoints.hdfs = self.hdfs
-        HDFSCheckpoints.root_dir = self.root_dir
         return HDFSCheckpoints
 
     # ContentsManager API part 1: methods that must be
