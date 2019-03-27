@@ -7,6 +7,7 @@ from hdfscontents.hdfsio import HDFSManagerMixin
 from tornado.web import HTTPError
 from notebook.services.contents.checkpoints import Checkpoints
 from pydoop.hdfs.fs import hdfs as HDFS
+import pydoop.hdfs
 
 from traitlets import Unicode, Instance, Integer, default
 try:  # new notebook
@@ -35,12 +36,15 @@ class HDFSCheckpoints(HDFSManagerMixin, Checkpoints):
     # hdfs = None
     # root_dire = None
 
-
     # ContentsManager-dependent checkpoint API
     def create_checkpoint(self, contents_mgr, path):
         """Create a checkpoint."""
-        checkpoint_id = u'checkpoint'
         src_path = contents_mgr._get_os_path(path)
+        #print("src_path: ",src_path)
+
+        # TODO: Custom get_checkpoint_id() for Multiple Checkpoints
+        checkpoint_id = self.get_checkpoint_id(path)
+
         dest_path = self.checkpoint_path(checkpoint_id, path)
         self._copy(src_path, dest_path)
         return self.checkpoint_model(checkpoint_id, dest_path)
@@ -106,6 +110,39 @@ class HDFSCheckpoints(HDFSManagerMixin, Checkpoints):
             self._hdfs_ensure_dir_exists(cp_dir)
         cp_path = os.path.join(cp_dir, filename)
         return cp_path
+
+    def get_checkpoint_id(self,path):
+        """return checkpoint_id for new checkpoint"""
+        path = path.strip('/')
+        parent, name = ('/' + path).rsplit('/', 1)
+        name,ext = os.path.splitext(name)
+        #print("name: ",name)
+        parent = parent.strip('/')
+        #print("parent: ",parent)
+        hdfs_path = self._get_hdfs_path(path=parent)
+        #print("hdfs_path: ",hdfs_path)
+        full_checkpoint_dir = os.path.join(hdfs_path,self.checkpoint_dir)+'/'
+        #print("full_checkpoint_dir: ", full_checkpoint_dir)
+        max_id = 1
+        for filepath_dict in self.hdfs.list_directory(full_checkpoint_dir):
+            filepath = filepath_dict['name']
+            # print("filepath: ",filepath)
+            filepath = filepath.strip('/')
+            parent, filename = ('/' + filepath).rsplit('/', 1)
+            parent = parent.strip('/')
+            #print("filename: ",filename)
+            basename, ext = os.path.splitext(filename)
+            filename,checkpoint_id = basename.rsplit('-',1)
+            #print("checkpoint_id: ",checkpoint_id)
+            if filename == name and checkpoint_id.isnumeric() and int(checkpoint_id) > max_id:
+                max_id = int(checkpoint_id)
+        return str(int(max_id) + 1)
+
+
+
+    def full_checkpoint_dir(self,path):
+        """find the full path to a checkpoint"""
+        pass
 
     def checkpoint_model(self, checkpoint_id, hdfs_path):
         """construct the info dict for a given checkpoint"""
