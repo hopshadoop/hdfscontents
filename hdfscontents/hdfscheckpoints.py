@@ -85,6 +85,8 @@ class HDFSCheckpoints(HDFSManagerMixin, Checkpoints):
         """
         path = path.strip('/')
         checkpoint_id_list = self.get_checkpoints_list(path)
+        # TODO: Sort by 'LastModified' instead of checkpoint id
+        checkpoint_id_list.sort(reverse=True)
         checkpoints_list = []
         for checkpoint_id in checkpoint_id_list:
             cp_path = self.checkpoint_path(checkpoint_id, path)
