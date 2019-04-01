@@ -16,7 +16,7 @@ from tornado import web
 from tornado.web import HTTPError
 import mimetypes
 import nbformat
-from traitlets import Instance, Integer, Unicode, default
+from traitlets import default
 
 try:  # PY3
     from base64 import encodebytes, decodebytes
@@ -29,21 +29,25 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
     ContentsManager that persists to HDFS filesystem local filesystem.
     """
 
-    # hdfs_namenode_host = Unicode(u'localhost', config=True, help='The HDFS namenode host')
-    # hdfs_namenode_port = Integer(9000, config=True, help='The HDFS namenode port')
-    # hdfs_user = Unicode(None, allow_none=True, config=True, help='The HDFS user name')
-    #
-    # root_dir = Unicode(u'/', config=True, help='The HDFS root directory to use')
-    #
-    # # The pydoop HDFS connection object used to interact with HDFS cluster.
-    # hdfs = Instance(HDFS, config=True)
-
-    # @default('hdfs')
-    # def _default_hdfs(self):
-    #     return HDFS(host=self.hdfs_namenode_host, port=self.hdfs_namenode_port, user=self.hdfs_user)  # groups=None
-
+    @default('checkpoints_class')
     def _checkpoints_class_default(self):
         return HDFSCheckpoints
+
+    @default('checkpoints_kwargs')
+    def _default_checkpoints_kwargs(self):
+        klass = HDFSContentsManager
+        try:
+            kw = super(klass, self)._checkpoints_kwargs_default()
+        except AttributeError:
+            kw = super(klass, self)._default_checkpoints_kwargs()
+
+        kw.update({
+            'hdfs_namenode_host': self.hdfs_namenode_host,
+            'hdfs_namenode_port': self.hdfs_namenode_port,
+            'hdfs_user': self.hdfs_user,
+            'root_dir': self.root_dir,
+        })
+        return kw
 
     # ContentsManager API part 1: methods that must be
     # implemented in subclasses.
@@ -334,6 +338,7 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
 
     def delete_file(self, path):
         """Delete file at path."""
+        # TODO: Deleting all associated (multiple) checkpoints
         path = path.strip('/')
         hdfs_path = to_os_path(path, self.root_dir)
         if self._hdfs_dir_exists(hdfs_path):

@@ -33,17 +33,14 @@ class HDFSCheckpoints(HDFSManagerMixin, Checkpoints):
         """,
     )
 
-    # hdfs = None
-    # root_dire = None
-
     # ContentsManager-dependent checkpoint API
     def create_checkpoint(self, contents_mgr, path):
         """Create a checkpoint."""
-        src_path = contents_mgr._get_os_path(path)
-        #print("src_path: ",src_path)
-
-        checkpoint_id = self.get_checkpoint_id(path)
-
+        if hasattr(contents_mgr,'_get_os_path'): #For checkpointing-only case
+            src_path = contents_mgr._get_os_path(path)
+        else:
+            src_path = contents_mgr._get_hdfs_path(path)
+        checkpoint_id = self.get_new_checkpoint_id(path)
         dest_path = self.checkpoint_path(checkpoint_id, path)
         self._copy(src_path, dest_path)
         return self.checkpoint_model(checkpoint_id, dest_path)
@@ -51,7 +48,10 @@ class HDFSCheckpoints(HDFSManagerMixin, Checkpoints):
     def restore_checkpoint(self, contents_mgr, checkpoint_id, path):
         """Restore a checkpoint."""
         src_path = self.checkpoint_path(checkpoint_id, path)
-        dest_path = contents_mgr._get_os_path(path)
+        if hasattr(contents_mgr, '_get_os_path'):  # For checkpointing-only case
+            dest_path = contents_mgr._get_os_path(path)
+        else:
+            dest_path = contents_mgr._get_hdfs_path(path)
         self._copy(src_path, dest_path)
 
     # ContentsManager-independent checkpoint API
@@ -84,16 +84,10 @@ class HDFSCheckpoints(HDFSManagerMixin, Checkpoints):
         This contents manager currently only supports one checkpoint per file.
         """
         path = path.strip('/')
-        #print("path: ",path)
-
         checkpoint_id_list = self.get_checkpoints_list(path)
-
         checkpoints_list = []
         for checkpoint_id in checkpoint_id_list:
             cp_path = self.checkpoint_path(checkpoint_id, path)
-            # print("cp_path: ",cp_path)
-            # print("get_hdfs_path: ",self._get_hdfs_path(path))
-
             if self._hdfs_file_exists(cp_path):
                 checkpoints_list.append(self.checkpoint_model(checkpoint_id, cp_path))
         return checkpoints_list
@@ -123,7 +117,6 @@ class HDFSCheckpoints(HDFSManagerMixin, Checkpoints):
         parent = parent.strip('/')
         hdfs_path = self._get_hdfs_path(path=parent)
         full_checkpoint_dir = os.path.join(hdfs_path, self.checkpoint_dir)
-        #print("full checkpoint dir: ", full_checkpoint_dir)
         for filepath_dict in self.hdfs.list_directory(full_checkpoint_dir):
             filepath = filepath_dict['name']
             filepath = filepath.strip('/')
@@ -136,29 +129,21 @@ class HDFSCheckpoints(HDFSManagerMixin, Checkpoints):
         #print("checkpoints list: ",checkpoints_list)
         return checkpoints_list
 
-    def get_checkpoint_id(self,path):
+    def get_new_checkpoint_id(self,path):
         """return checkpoint_id for new checkpoint"""
         path = path.strip('/')
         parent, name = ('/' + path).rsplit('/', 1)
         name,ext = os.path.splitext(name)
-        #print("name: ",name)
         parent = parent.strip('/')
-        #print("parent: ",parent)
         hdfs_path = self._get_hdfs_path(path=parent)
-        #print("hdfs_path: ",hdfs_path)
         full_checkpoint_dir = os.path.join(hdfs_path,self.checkpoint_dir)+'/'
-        #print("full_checkpoint_dir: ", full_checkpoint_dir)
-        max_id = 1
+        max_id = 0
         for filepath_dict in self.hdfs.list_directory(full_checkpoint_dir):
             filepath = filepath_dict['name']
-            # print("filepath: ",filepath)
             filepath = filepath.strip('/')
             parent, filename = ('/' + filepath).rsplit('/', 1)
-            parent = parent.strip('/')
-            #print("filename: ",filename)
             basename, ext = os.path.splitext(filename)
             filename,checkpoint_id = basename.rsplit('-',1)
-            #print("checkpoint_id: ",checkpoint_id)
             if filename == name and checkpoint_id.isnumeric() and int(checkpoint_id) > max_id:
                 max_id = int(checkpoint_id)
         return str(int(max_id) + 1)

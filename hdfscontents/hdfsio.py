@@ -42,6 +42,8 @@ def path_to_invalid(path):
 def hdfs_copy_file(hdfs, src, dst):
     chunk = 2 ** 16
     # TODO: check if we need to specify replication
+
+    # TODO: Better way to support check-pointing only usecase
     try:
         with hdfs.open_file(dst, 'w') as f1:
             with hdfs.open_file(src, 'r') as f2:
@@ -50,6 +52,7 @@ def hdfs_copy_file(hdfs, src, dst):
                     if len(out) == 0:
                         break
                     f1.write(out)
+    # When source file is not on HDFS
     except:
         with hdfs.open_file(dst, 'w') as f1:
             with open(src, 'rb') as f2:
