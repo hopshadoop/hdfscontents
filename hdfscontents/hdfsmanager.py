@@ -338,7 +338,6 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
 
     def delete_file(self, path):
         """Delete file at path."""
-        # TODO: Deleting all associated (multiple) checkpoints
         path = path.strip('/')
         hdfs_path = to_os_path(path, self.root_dir)
         if self._hdfs_dir_exists(hdfs_path):
