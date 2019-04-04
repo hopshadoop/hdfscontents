@@ -2,7 +2,7 @@
 HDFS Contents Manager for Jupyter Notebooks
 ===========================================
 
-A contents manager for Jupyter that uses the Hadoop File System (HDFS) to store Notebooks and files
+A contents manager for Jupyter that uses the Hadoop File System (HDFS) to store Notebooks and files. HDFSContents' HDFSContentsManager class can be used to replace all local filesystem storage with Hadoop's File System storage, while its HDFSCheckpoints class can be used to replace just the IPython's checkpoint storage.
 
 
 Getting Started
