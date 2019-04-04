@@ -5,5 +5,5 @@ c.NotebookApp.contents_manager_class = HDFSContentsManager
 
 c.HDFSCheckpoints.hdfs_namenode_host='<namenode_host_ip>'
 c.HDFSCheckpoints.hdfs_namenode_port=8020
-c.HDFSCheckpoints.root_dir='/user/amangarg'
+c.HDFSCheckpoints.root_dir='/user/hdfs_user'
 c.HDFSCheckpoints.hdfs_user='hdfs'
