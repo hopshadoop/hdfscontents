@@ -17,6 +17,8 @@ from tornado.web import HTTPError
 import mimetypes
 import nbformat
 from traitlets import Instance, Integer, Unicode, default
+from hops import xattr
+from hops.exceptions import RestAPIError
 
 try:  # PY3
     from base64 import encodebytes, decodebytes
@@ -37,6 +39,7 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
 
     # The pydoop HDFS connection object used to interact with HDFS cluster.
     hdfs = Instance(HDFS, config=True)
+    jupyter_configuration_xattr_name = "jupyter_configuration"
 
     @default('hdfs')
     def _default_hdfs(self):
@@ -306,9 +309,11 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
                     nb = nbformat.from_dict(model['content'])
                     self.check_and_sign(nb, path)
                     self._save_notebook(hdfs_path, nb)
+                    jupyter_configuration = self.get_notebook_jupyter_configuration_xatrr(hdfs_path)
                     # One checkpoint should always exist for notebooks.
                     if not self.checkpoints.list_checkpoints(path):
                         self.create_checkpoint(path)
+                    self.set_notebook_jupyter_configuration_xatrr(hdfs_path, jupyter_configuration)
                 elif model['type'] == 'file':
                     # Missing format will be handled internally by _save_file.
                     self._save_file(hdfs_path, model['content'], model.get('format'))
@@ -375,7 +380,7 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
 
         new_hdfs_path = to_os_path(new_path, self.root_dir)
         old_hdfs_path = to_os_path(old_path, self.root_dir)
-
+        jupyter_configuration = self.get_notebook_jupyter_configuration_xatrr(old_hdfs_path)
         # Should we proceed with the move?
         if self._hdfs_exists(new_hdfs_path):
             raise web.HTTPError(409, u'File already exists: %s' % new_path)
@@ -383,8 +388,29 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
         # Move the file
         try:
             self._hdfs_move_file(old_hdfs_path, new_hdfs_path)
+            self.set_notebook_jupyter_configuration_xatrr(new_hdfs_path, jupyter_configuration)
         except Exception as e:
             raise web.HTTPError(500, u'Unknown error renaming file: %s %s' % (old_path, e))
 
     def info_string(self):
         return "Serving notebooks from HDFS directory: %s" % self.root_dir
+
+    def get_notebook_jupyter_configuration_xatrr(self, hdfs_path):
+        self.log.debug("Getting jupyter configuration xattr for %s", hdfs_path)
+        jupyter_configuration = {}
+        if ".ipynb" not in hdfs_path:
+            return jupyter_configuration
+        try:
+            jupyter_configuration = xattr.get_xattr(hdfs_path, self.jupyter_configuration_xattr_name)
+        except RestAPIError as e:
+            self.log.debug("Failed to get jupyter configuration xattr for %s", hdfs_path, e)
+        return jupyter_configuration
+
+    def set_notebook_jupyter_configuration_xatrr(self, hdfs_path, jupyter_configuration):
+        if bool(jupyter_configuration):
+            self.log.debug("Set jupyter configuration xattr %s", hdfs_path)
+            try:
+                xattr.set_xattr(hdfs_path, self.jupyter_configuration_xattr_name, jupyter_configuration)
+            except RestAPIError as e:
+                self.log.debug("Failed to set jupyter configuration xattr for %s", hdfs_path, e)
+
