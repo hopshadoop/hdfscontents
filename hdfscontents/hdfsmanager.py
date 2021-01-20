@@ -404,6 +404,7 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
             jupyter_configuration = xattr.get_xattr(hdfs_path, self.jupyter_configuration_xattr_name)
         except RestAPIError as e:
             self.log.debug("Failed to get jupyter configuration xattr for %s", hdfs_path)
+            self.log.debug(e)
         return jupyter_configuration
 
     def set_notebook_jupyter_configuration_xatrr(self, hdfs_path, jupyter_configuration):
