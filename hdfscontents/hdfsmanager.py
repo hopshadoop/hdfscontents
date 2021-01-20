@@ -306,9 +306,9 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
 
             try:
                 if model['type'] == 'notebook':
+                    jupyter_configuration = self.get_notebook_jupyter_configuration_xatrr(hdfs_path)
                     nb = nbformat.from_dict(model['content'])
                     self.check_and_sign(nb, path)
-                    jupyter_configuration = self.get_notebook_jupyter_configuration_xatrr(hdfs_path)
                     self._save_notebook(hdfs_path, nb)
                     # One checkpoint should always exist for notebooks.
                     if not self.checkpoints.list_checkpoints(path):
