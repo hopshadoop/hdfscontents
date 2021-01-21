@@ -402,7 +402,7 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
             return jupyter_configuration
         try:
             jupyter_configuration = xattr.get_xattr(hdfs_path, self.jupyter_configuration_xattr_name)
-        except RestAPIError as e:
+        except Exception as e:
             self.log.debug(u'Failed to get jupyter configuration xattr for %s %s', hdfs_path, e, exc_info=True)
         return jupyter_configuration
 
@@ -411,6 +411,6 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
             self.log.debug("Set jupyter configuration xattr %s", hdfs_path)
             try:
                 xattr.set_xattr(hdfs_path, self.jupyter_configuration_xattr_name, jupyter_configuration)
-            except RestAPIError as e:
+            except Exception as e:
                 self.log.debug(u'Failed to set jupyter configuration xattr for %s %s', hdfs_path, e, exc_info=True)
 
