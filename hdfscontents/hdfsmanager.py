@@ -410,15 +410,13 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
         jupyter_configuration = {}
         if self.__is_hops_environment_installed():
             self.log.debug("Getting jupyter configuration xattr for %s", hdfs_path)
-            if ".ipynb" not in hdfs_path:
-                return jupyter_configuration
-            try:
-                jupyter_configuration = xattr.get_xattr(hdfs_path, self.jupyter_configuration_xattr_name)
-            except Exception as e:
-                self.log.debug(u'Failed to get jupyter configuration xattr for %s %s', hdfs_path, e, exc_info=True)
-            return jupyter_configuration
-        else:
-            return {}
+            if ".ipynb" in hdfs_path:
+                try:
+                    jupyter_configuration = xattr.get_xattr(hdfs_path, self.jupyter_configuration_xattr_name)
+                except Exception as e:
+                    self.log.debug(u'Failed to get jupyter configuration xattr for %s %s', hdfs_path, e, exc_info=True)
+
+        return jupyter_configuration
 
     def set_notebook_jupyter_configuration_xatrr(self, hdfs_path, jupyter_configuration):
         if bool(jupyter_configuration):
