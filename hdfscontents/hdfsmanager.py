@@ -47,6 +47,9 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
     jupyter_configuration_xattr_name = "jupyter_configuration"
     hdfs_env_installed = True
 
+    def __init__(self):
+        pass
+
     @default('hdfs')
     def _default_hdfs(self):
         return HDFS(host=self.hdfs_namenode_host, port=self.hdfs_namenode_port, user=self.hdfs_user)  # groups=None
