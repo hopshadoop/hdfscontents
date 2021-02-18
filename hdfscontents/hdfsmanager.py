@@ -44,10 +44,10 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
     # The pydoop HDFS connection object used to interact with HDFS cluster.
     hdfs = Instance(HDFS, config=True)
     jupyter_configuration_xattr_name = "jupyter_configuration"
-    hdfs_env_installed = True
+
 
     def __init__(self, **kwargs):
-        pass
+        self.hdfs_env_installed = self.__is_hops_environment_installed()
 
     @default('hdfs')
     def _default_hdfs(self):
