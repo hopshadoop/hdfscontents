@@ -20,6 +20,7 @@ from traitlets import Instance, Integer, Unicode, default
 try:
     from hops import xattr
 except ImportError:
+    # do nothing
     pass
 
 from hops.exceptions import RestAPIError
@@ -44,9 +45,7 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
     # The pydoop HDFS connection object used to interact with HDFS cluster.
     hdfs = Instance(HDFS, config=True)
     jupyter_configuration_xattr_name = "jupyter_configuration"
-
-    def __init__(self):
-        self.hdfs_env_installed = self.__is_hops_environment_installed()
+    hdfs_env_installed = True
 
     @default('hdfs')
     def _default_hdfs(self):
