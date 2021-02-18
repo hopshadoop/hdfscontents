@@ -46,7 +46,7 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
     jupyter_configuration_xattr_name = "jupyter_configuration"
 
     def __init__(self):
-        hdfs_env_installed = self.__is_hops_environment_installed()
+        self.hdfs_env_installed = self.__is_hops_environment_installed()
 
     @default('hdfs')
     def _default_hdfs(self):
