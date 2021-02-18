@@ -45,9 +45,6 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
     hdfs = Instance(HDFS, config=True)
     jupyter_configuration_xattr_name = "jupyter_configuration"
 
-    def __init__(self, **kwargs):
-        self.hdfs_env_installed = self.__is_hops_environment_installed()
-
     @default('hdfs')
     def _default_hdfs(self):
         return HDFS(host=self.hdfs_namenode_host, port=self.hdfs_namenode_port, user=self.hdfs_user)  # groups=None
@@ -411,7 +408,7 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
 
     def get_notebook_jupyter_configuration_xatrr(self, hdfs_path):
         jupyter_configuration = {}
-        if self.hdfs_env_installed:
+        if self.__is_hops_environment_installed():
             self.log.debug("Getting jupyter configuration xattr for %s", hdfs_path)
             if ".ipynb" not in hdfs_path:
                 return jupyter_configuration
