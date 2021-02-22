@@ -22,8 +22,6 @@ try:
 except ImportError:
     pass
 
-from hops.exceptions import RestAPIError
-
 try:  # PY3
     from base64 import encodebytes, decodebytes
 except ImportError:  # PY2
