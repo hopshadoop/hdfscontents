@@ -2,7 +2,7 @@
 
 # Copyright (c) A
 # Distributed under the terms of the Modified BSD License.
-
+import sys
 from pydoop.hdfs.fs import hdfs as HDFS
 from hdfscontents.hdfsio import HDFSManagerMixin
 from hdfscontents.hdfscheckpoints import HDFSCheckpoints
@@ -17,6 +17,10 @@ from tornado.web import HTTPError
 import mimetypes
 import nbformat
 from traitlets import Instance, Integer, Unicode, default
+try:
+    from hops import xattr
+except ImportError:
+    pass
 
 try:  # PY3
     from base64 import encodebytes, decodebytes
@@ -37,10 +41,18 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
 
     # The pydoop HDFS connection object used to interact with HDFS cluster.
     hdfs = Instance(HDFS, config=True)
+    jupyter_configuration_xattr_name = "jupyter_configuration"
 
     @default('hdfs')
     def _default_hdfs(self):
         return HDFS(host=self.hdfs_namenode_host, port=self.hdfs_namenode_port, user=self.hdfs_user)  # groups=None
+
+    def __is_hops_environment_installed(self):
+        if 'hops.xattr' in sys.modules:
+            return True
+        else:
+            self.log.debug("Attaching configuration to notebook disabled. Hops environment not installed")
+            return False
 
     def _checkpoints_class_default(self):
         # TODO: a better way to pass hdfs and root_dir?
@@ -303,12 +315,14 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
 
             try:
                 if model['type'] == 'notebook':
+                    jupyter_configuration = self.get_notebook_jupyter_configuration_xatrr(hdfs_path)
                     nb = nbformat.from_dict(model['content'])
                     self.check_and_sign(nb, path)
                     self._save_notebook(hdfs_path, nb)
                     # One checkpoint should always exist for notebooks.
                     if not self.checkpoints.list_checkpoints(path):
                         self.create_checkpoint(path)
+                    self.set_notebook_jupyter_configuration_xatrr(hdfs_path, jupyter_configuration)
                 elif model['type'] == 'file':
                     # Missing format will be handled internally by _save_file.
                     self._save_file(hdfs_path, model['content'], model.get('format'))
@@ -375,7 +389,7 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
 
         new_hdfs_path = to_os_path(new_path, self.root_dir)
         old_hdfs_path = to_os_path(old_path, self.root_dir)
-
+        jupyter_configuration = self.get_notebook_jupyter_configuration_xatrr(old_hdfs_path)
         # Should we proceed with the move?
         if self._hdfs_exists(new_hdfs_path):
             raise web.HTTPError(409, u'File already exists: %s' % new_path)
@@ -383,8 +397,30 @@ class HDFSContentsManager(ContentsManager, HDFSManagerMixin):
         # Move the file
         try:
             self._hdfs_move_file(old_hdfs_path, new_hdfs_path)
+            self.set_notebook_jupyter_configuration_xatrr(new_hdfs_path, jupyter_configuration)
         except Exception as e:
             raise web.HTTPError(500, u'Unknown error renaming file: %s %s' % (old_path, e))
 
     def info_string(self):
         return "Serving notebooks from HDFS directory: %s" % self.root_dir
+
+    def get_notebook_jupyter_configuration_xatrr(self, hdfs_path):
+        jupyter_configuration = {}
+        if self.__is_hops_environment_installed():
+            self.log.debug("Getting jupyter configuration xattr for %s", hdfs_path)
+            if ".ipynb" in hdfs_path:
+                try:
+                    jupyter_configuration = xattr.get_xattr(hdfs_path, self.jupyter_configuration_xattr_name)
+                except Exception as e:
+                    self.log.debug(u'Failed to get jupyter configuration xattr for %s %s', hdfs_path, e, exc_info=True)
+
+        return jupyter_configuration
+
+    def set_notebook_jupyter_configuration_xatrr(self, hdfs_path, jupyter_configuration):
+        if bool(jupyter_configuration):
+            self.log.debug("Set jupyter configuration xattr %s", hdfs_path)
+            try:
+                xattr.set_xattr(hdfs_path, self.jupyter_configuration_xattr_name, jupyter_configuration)
+            except Exception as e:
+                self.log.debug(u'Failed to set jupyter configuration xattr for %s %s', hdfs_path, e, exc_info=True)
+
