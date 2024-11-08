@@ -6,12 +6,24 @@ import sys
 from pydoop.hdfs.fs import hdfs as HDFS
 from hdfscontents.hdfsio import HDFSManagerMixin
 from hdfscontents.hdfscheckpoints import HDFSCheckpoints
-from notebook.services.contents.manager import ContentsManager
-from notebook.utils import to_os_path
+
+try:
+    # required for jupyterlab 4.0.0+
+    from jupyter_server.services.contents.manager import ContentsManager
+except ImportError:
+    from notebook.services.contents.manager import ContentsManager
+
+try:
+    # required for jupyterlab 4.0.0+
+    from jupyter_server.utils import to_os_path
+except ImportError:
+    from notebook.utils import to_os_path
+
 try:  # new notebook
-    from notebook import _tz as tz
+    from jupyter_server import _tz as tz
 except ImportError: # old notebook
-    from notebook.services.contents import tz
+    from notebook import _tz as tz
+
 from tornado import web
 from tornado.web import HTTPError
 import mimetypes

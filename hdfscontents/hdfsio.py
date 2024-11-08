@@ -9,10 +9,18 @@ from contextlib import contextmanager
 import errno
 import os
 from tornado.web import HTTPError
-from notebook.utils import (
-    to_api_path,
-    to_os_path,
-)
+try:
+    # required for jupyterlab 4.0.0+
+    from jupyter_server.utils import (
+        to_api_path,
+        to_os_path,
+    )
+except ImportError:
+    from notebook.utils import (
+        to_api_path,
+        to_os_path,
+    )
+
 import nbformat
 
 from pydoop.hdfs.path import split
