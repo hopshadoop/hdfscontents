@@ -4,13 +4,18 @@ HDFS-based Checkpoints implementations.
 import os
 from hdfscontents.hdfsio import HDFSManagerMixin
 from tornado.web import HTTPError
-from notebook.services.contents.checkpoints import Checkpoints
+try:
+    from jupyter_server.services.contents.checkpoints import Checkpoints
+except ImportError:
+    from notebook.services.contents.checkpoints import Checkpoints
 
 from traitlets import Unicode
 try:  # new notebook
+    # required for jupyterlab 4.0.0+
+    from jupyter_server import _tz as tz
+except ImportError:
+    # old notebook
     from notebook import _tz as tz
-except ImportError: # old notebook
-    from notebook.services.contents import tz
 
 
 class HDFSCheckpoints(HDFSManagerMixin, Checkpoints):
